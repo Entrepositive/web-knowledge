@@ -20,6 +20,7 @@ takes it down, and caches aggressively so repeat questions cost nothing.
 
 ```bash
 git clone https://github.com/Entrepositive/web-knowledge.git && cd web-knowledge
+touch .env   # must exist before the next step, or Docker bind-mounts a directory here instead of a file
 docker compose run --rm web-knowledge npm run setup   # interactive — paste in your provider keys
 docker compose up -d --build
 curl -s http://localhost:4242/health

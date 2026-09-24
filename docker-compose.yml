@@ -11,6 +11,9 @@ services:
       - "4242:4242"   # reachable at http://localhost:4242 with no other setup
     volumes:
       - ./knowledge.db:/app/knowledge.db
+      - ./.env:/app/.env   # setup.js reads/writes this file directly — must
+                            # exist before first run (`touch .env`) or Docker
+                            # will bind-mount a directory here instead of a file
     networks:
       - internal
 
