@@ -1,0 +1,31 @@
+services:
+  web-knowledge:
+    build: .
+    container_name: web-knowledge
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Override .env value — SearXNG reachable by container name inside Docker
+      SEARXNG_URL: http://web-knowledge-searxng:8080
+    volumes:
+      - ./knowledge.db:/app/knowledge.db
+    networks:
+      - internal
+      - web        # shared network — n8n can reach this container by name
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: web-knowledge-searxng
+    restart: unless-stopped
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:4243/
+    networks:
+      - internal   # internal only — not exposed to the web network
+
+networks:
+  internal:
+    driver: bridge
+  web:
+    external: true  # the central shared network

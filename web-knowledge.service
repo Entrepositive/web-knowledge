@@ -1,0 +1,16 @@
+[Unit]
+Description=web-knowledge research microservice
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=claude
+WorkingDirectory=/home/claude/web-knowledge
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/home/claude/web-knowledge/.env
+
+[Install]
+WantedBy=multi-user.target
