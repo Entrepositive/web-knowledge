@@ -51,11 +51,6 @@ Currently binds to `0.0.0.0:4242` — structurally reachable on all interfaces (
 
 ---
 
-### [TASK 10] Auth Token for /search Endpoint
-Add a shared secret header (`X-WK-Token`) checked on every request before processing. Token stored in `.env` as `WK_SECRET`. Required before any public or multi-user deployment. Will become a key feature — agents must include the token, future users set their own.
-
----
-
 ### [TASK 15] Session Memory — Conversational Context [PRO]
 
 **The concept:** Store raw search content (fetched page content + sources) under a session key so follow-up questions in the same conversation reuse it — no new search, no credits burned.
@@ -192,6 +187,19 @@ Now that a cache hit extends `expires_at` (rolling window — done 2026-09-23, s
 ---
 
 ## COMPLETED
+
+### [TASK 22] CLI Setup Wizard, API Token Auth (TASK 10, done), Git Packaging — 2026-09-24
+Pivoted away from an earlier web-UI-with-login plan (discussed, never built) to a CLI-only design: no web-exposed credential surface at all. `scripts/setup.js` (`npm run setup`) prompts interactively for each provider key (Enter keeps current, shows masked current value) and auto-generates/rotates the `X-WK-Token` API bearer token, writing `.env` (mode 600). Found and fixed a real bug during testing: readline's `question()` silently drops lines that arrive in the same burst as the one it consumes (e.g. pasting several keys at once, or any piped batch input) — replaced with a permanent-listener queued-line reader that can't lose input regardless of timing.
+
+`src/index.js` now requires `X-WK-Token` on `/search` and `/read` (`/health` stays open); fails open with a loud startup warning if unset, matching the service's existing missing-config philosophy. Branding: a green ASCII "K" banner on the CLI wizard (Matrix-style, per Eric — there's no web page left to put a logo on), and `/health` now reports `service: "K — web-knowledge"`.
+
+Turned `~/web-knowledge` into an actual git repo (`git init`, `.gitignore` excluding `.env`/`knowledge.db`, first commit `cf02fc2`) with a real `README.md` for portability — `git clone` → `docker compose run --rm web-knowledge npm run setup` → `docker compose up -d --build` is now the whole deploy story, no host Node needed anywhere.
+
+**Deployed and verified live 2026-09-24:** generated the real token; hardcoded it into the 4 `search_web`/`read_webpage` toolCode nodes on the live Manon Telegram (`43uD84HyBuOanaOb`) and Slack (`R615lNDRXn7dTkKO`) agents *before* rebuilding web-knowledge, to avoid any outage window (backups of both pre-patch workflows at `/mnt/mediaDrive/Claude/n8n-backups/`). Rebuilt (`docker build`, not `compose build` — see TASK 21's buildx note) and confirmed: no/wrong token → 401, correct token → 200, `/health` still unauthenticated.
+
+**Explicitly out of scope for this pass, and known:** the token stops unauthorized *callers*, not a privileged *operator* — this doesn't hide keys from anyone with shell/Docker access to the host (see the banked Docker-isolation discussion in `project_web_knowledge` memory, Eric's Option 2, not started). Rotating the token later means updating both `.env` and all 4 n8n nodes together, since toolCode nodes can't read n8n credentials or (without a full n8n restart) `$env`.
+
+---
 
 ### [TASK 21] Rolling 24h Cache Window on Hit — 2026-09-23
 A cache hit (`/search` or `/read`) now extends the entry's `expires_at` by another full TTL window (`touchCache`/`touchCacheRead` in `src/db.js`) instead of leaving the original fixed-window expiry in place. `created_at` is deliberately never touched by this — it stays a permanent record of first-cached time, which TASK 20's flush job depends on. Verified live: identical query called twice 4s apart showed `created_at` unchanged, `expires_at` advanced by ~4s on the second (cached) call. Deployed via `docker build` (not `docker compose build` — this host's `buildx` 0.13.1 is older than what Compose v5.5.1's `build` subcommand requires) + `docker compose up -d --force-recreate web-knowledge`.
