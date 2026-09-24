@@ -7,14 +7,30 @@ Brave, Serper, DuckDuckGo for search; raw HTTP, Jina, Tavily Extract,
 Firecrawl for reading pages) so no single provider's downtime or rate limit
 takes it down, and caches aggressively so repeat questions cost nothing.
 
+## Prerequisites
+
+- Docker + Docker Compose v2. This repo is **private** — you need a GitHub
+  account with access to clone it.
+- If `docker compose build` fails with `compose build requires buildx 0.17.0
+  or later`, your Compose is newer than your `buildx` plugin. Work around it
+  with the classic builder instead: `DOCKER_BUILDKIT=0 docker build -t
+  web-knowledge-web-knowledge .`, then `docker compose up -d` (no `--build`).
+
 ## Quickstart
 
 ```bash
-git clone <this repo> web-knowledge && cd web-knowledge
+git clone https://github.com/Entrepositive/web-knowledge.git && cd web-knowledge
 docker compose run --rm web-knowledge npm run setup   # interactive — paste in your provider keys
 docker compose up -d --build
 curl -s http://localhost:4242/health
 ```
+
+By default this runs fully standalone — `ports: 4242:4242` in
+`docker-compose.yml` means `localhost:4242` works immediately, no other
+setup needed. If you want another Docker Compose stack (e.g. n8n) on this
+same host to reach it by container name over a shared network, add a
+`docker-compose.override.yml` (gitignored, host-specific) attaching it to
+that network — see the comment at the bottom of `docker-compose.yml`.
 
 `setup` is the only configuration step. It's a CLI wizard, not a web page —
 there is no login UI and nothing web-exposed for entering credentials. It

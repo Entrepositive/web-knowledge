@@ -7,11 +7,12 @@ services:
     environment:
       # Override .env value — SearXNG reachable by container name inside Docker
       SEARXNG_URL: http://web-knowledge-searxng:8080
+    ports:
+      - "4242:4242"   # reachable at http://localhost:4242 with no other setup
     volumes:
       - ./knowledge.db:/app/knowledge.db
     networks:
       - internal
-      - web        # shared network — n8n can reach this container by name
 
   searxng:
     image: searxng/searxng:latest
@@ -22,10 +23,12 @@ services:
     environment:
       - SEARXNG_BASE_URL=http://localhost:4243/
     networks:
-      - internal   # internal only — not exposed to the web network
+      - internal   # internal only — never exposed to the host or another network
 
 networks:
   internal:
     driver: bridge
-  web:
-    external: true  # the central shared network
+
+# To also reach this service by container name from another stack on a
+# shared Docker network (e.g. n8n on a network called `web`), add a
+# docker-compose.override.yml (untracked, host-specific) — see README.
