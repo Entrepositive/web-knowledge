@@ -1,0 +1,9 @@
+# Keep secrets, state and local clutter out of the build context
+data/
+.env
+knowledge.db*
+node_modules/
+.git/
+dev-notes/
+*.md
+docker-compose*.yml
