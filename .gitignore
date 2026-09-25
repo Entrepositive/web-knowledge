@@ -1,5 +1,20 @@
-node_modules/
+# Runtime state — config (API keys, token) and the SQLite database
+data/
+
+# Pre-2026-09-25 layout, kept ignored so an upgraded install never commits them
 .env
 knowledge.db
 knowledge.db-journal
+
+# Host-specific compose additions (e.g. joining another stack's network)
 docker-compose.override.yml
+
+node_modules/
+
+# Local-only project notes
+RECAP.md
+TODO.md
+PLANNING.md
+SESSION.log
+SECURITY_AUDIT*.md
+dev-notes/
