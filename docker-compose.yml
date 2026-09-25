@@ -1,37 +1,40 @@
+# web-knowledge — see README.md for install instructions.
+#
+# Optional settings, read from your shell environment or from a file named
+# `.env` next to this one (that file holds ONLY these two settings — API keys
+# live in data/config.env, written by setup):
+#   WK_PORT  host port to publish on            (default 4242)
+#   WK_BIND  host address to publish on         (default 127.0.0.1 = this machine only;
+#                                                 0.0.0.0 = every network interface)
+#
+# To let another Docker Compose stack (e.g. n8n) reach this service by name,
+# copy docker-compose.override.example.yml to docker-compose.override.yml
+# and edit it — see README "Connecting other containers".
+
 services:
   web-knowledge:
     build: .
-    container_name: web-knowledge
+    image: web-knowledge:local
     restart: unless-stopped
-    env_file: .env
     environment:
-      # Override .env value — SearXNG reachable by container name inside Docker
-      SEARXNG_URL: http://web-knowledge-searxng:8080
+      SEARXNG_URL: http://searxng:8080
     ports:
-      - "4242:4242"   # reachable at http://localhost:4242 with no other setup
+      - "${WK_BIND:-127.0.0.1}:${WK_PORT:-4242}:4242"
     volumes:
-      - ./knowledge.db:/app/knowledge.db
-      - ./.env:/app/.env   # setup.js reads/writes this file directly — must
-                            # exist before first run (`touch .env`) or Docker
-                            # will bind-mount a directory here instead of a file
+      # A directory, not individual files: Docker creates a missing directory
+      # correctly, whereas a missing bind-mounted file becomes a directory.
+      - ./data:/app/data
     networks:
       - internal
 
   searxng:
     image: searxng/searxng:latest
-    container_name: web-knowledge-searxng
     restart: unless-stopped
     volumes:
-      - ./searxng:/etc/searxng:rw
-    environment:
-      - SEARXNG_BASE_URL=http://localhost:4243/
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     networks:
-      - internal   # internal only — never exposed to the host or another network
+      - internal   # never published to the host
 
 networks:
   internal:
     driver: bridge
-
-# To also reach this service by container name from another stack on a
-# shared Docker network (e.g. n8n on a network called `web`), add a
-# docker-compose.override.yml (untracked, host-specific) — see README.

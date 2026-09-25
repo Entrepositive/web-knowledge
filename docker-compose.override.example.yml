@@ -1,0 +1,20 @@
+# Copy to docker-compose.override.yml (not tracked by git) and edit.
+#
+# Joins web-knowledge to another stack's Docker network so containers on it
+# (e.g. n8n) can call  http://web-knowledge:4242
+#
+# Find the right network name with:
+#   docker inspect <other-container> --format '{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}'
+#
+# Then apply with:  docker compose up -d
+
+services:
+  web-knowledge:
+    networks:
+      - internal
+      - shared
+
+networks:
+  shared:
+    external: true
+    name: CHANGE_ME   # e.g. n8n_default
