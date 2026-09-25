@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import { missingConfig, CONFIG_PATH } from './config.js'; // keep first: loads config before other modules read process.env
 import express from 'express';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
@@ -19,17 +19,22 @@ const limiter = rateLimit({
 });
 app.use('/search', limiter);
 
-// Require X-WK-Token on /search and /read — without it, anyone who can
-// reach this service can spend your provider quota. Set via `npm run setup`.
-// Fails open (with a loud warning) if no token is configured at all, matching
-// this service's existing philosophy of degrading gracefully on missing config
-// rather than refusing to start.
-if (!process.env.WK_API_TOKEN) {
-  console.warn('[web-knowledge] WARNING: WK_API_TOKEN is not set — /search and /read are UNAUTHENTICATED. Run `npm run setup`.');
+// Until setup has run, the service still starts (so /health can say what's
+// wrong instead of crash-looping) but refuses real work. Requests are never
+// served unauthenticated.
+const SETUP_HINT = 'Run setup: docker compose run --rm web-knowledge npm run setup';
+const missing = missingConfig();
+if (missing.length) {
+  console.warn(`[web-knowledge] NOT CONFIGURED — missing ${missing.join(', ')} (looked in ${CONFIG_PATH}). ${SETUP_HINT}`);
 }
+
+// Require X-WK-Token on /search and /read — without it, anyone who can
+// reach this service can spend your provider quota.
 function checkToken(req, res, next) {
+  if (missing.length) {
+    return res.status(503).json({ error: `Service not configured (missing ${missing.join(', ')}). ${SETUP_HINT}` });
+  }
   const expected = process.env.WK_API_TOKEN;
-  if (!expected) return next(); // no token configured — see startup warning above
   const provided = req.headers['x-wk-token'] || '';
   const expectedBuf = Buffer.from(expected);
   const providedBuf = Buffer.from(provided);
@@ -63,7 +68,12 @@ function logActiveProviders() {
   if (skippedRead.length) console.log(`[web-knowledge] Skipped (no key): ${skippedRead.join(', ')}`);
 }
 
-app.get('/health', (req, res) => res.json({ status: 'ok', service: 'K — web-knowledge' }));
+app.get('/health', (req, res) => {
+  if (missing.length) {
+    return res.status(503).json({ status: 'unconfigured', missing, fix: SETUP_HINT });
+  }
+  res.json({ status: 'ok', service: 'K — web-knowledge' });
+});
 
 app.post('/search', async (req, res) => {
   const { query } = req.body;

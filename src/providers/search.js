@@ -46,7 +46,7 @@ async function searchTavily(query) {
 }
 
 async function searchSearXNG(query) {
-  const url = process.env.SEARXNG_URL || 'http://localhost:4243';
+  const url = process.env.SEARXNG_URL || 'http://searxng:8080';
   return tryProvider('searxng', async () => {
     const res = await axios.get(`${url}/search`, {
       params: { q: query, format: 'json', language: 'en' },
