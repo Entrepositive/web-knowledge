@@ -100,6 +100,7 @@ fi
 # ── 4. Configure ─────────────────────────────────────────────────────────────
 configured=0
 [ -f data/config.env ] && configured=1
+ran_setup=0
 
 env_given=0
 passthrough=()
@@ -118,6 +119,7 @@ if [ "$NON_INTERACTIVE" = 1 ]; then
     [ "$ROTATE" = 1 ] && extra+=(--rotate-token)
     docker compose run --rm --no-deps -T ${passthrough[@]+"${passthrough[@]}"} web-knowledge node scripts/setup.js "${extra[@]}" \
       || die "Setup failed (see output above)."
+    ran_setup=1
   else
     step "Configuration: keeping existing data/config.env"
   fi
@@ -128,6 +130,7 @@ else
        ANTHROPIC_API_KEY=... ./install.sh --non-interactive   (see README)"
     docker compose run --rm --no-deps web-knowledge node scripts/setup.js \
       || die "Setup failed (see output above)."
+    ran_setup=1
   else
     step "Configuration: keeping existing data/config.env (use --reconfigure to change keys)"
   fi
@@ -136,6 +139,10 @@ fi
 # ── 5. Start + verify ────────────────────────────────────────────────────────
 step "Starting"
 docker compose up -d --no-build || die "docker compose up failed (see output above)."
+# Config is read at startup — an already-running container must restart to see new keys/token.
+if [ "$ran_setup" = 1 ]; then
+  docker compose restart web-knowledge || die "Restart after setup failed (see output above)."
+fi
 
 step "Waiting for the service to report healthy"
 health=""
