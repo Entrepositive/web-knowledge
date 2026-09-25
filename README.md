@@ -19,7 +19,7 @@ installed on the host besides this folder.
 
 | Need | Check with | Notes |
 |---|---|---|
-| Linux or macOS host, x86-64 or ARM64 | `uname -sm` | Tested on Debian 13 (ARM64, Raspberry Pi 4). |
+| Linux host, x86-64 or ARM64 | `uname -sm` | Tested on Debian 13 ARM64 (Raspberry Pi 4). x86-64 and macOS (Docker Desktop) are expected to work but untested. |
 | Docker Engine 20.10 or newer | `docker version` | [Install Docker](https://docs.docker.com/engine/install/) |
 | Docker Compose v2 (`docker compose`, with a space) | `docker compose version` | The old `docker-compose` v1 is not supported. |
 | Permission to use Docker | `docker info` | If this fails with "permission denied", run the commands with `sudo`, or add yourself to the `docker` group (`sudo usermod -aG docker $USER`, then log out and back in). |
